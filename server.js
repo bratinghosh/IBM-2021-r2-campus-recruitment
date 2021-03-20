@@ -22,7 +22,7 @@ app.get('/', function (req, res) {
 
 // Get product info API
 app.get('/product', function (req, res) {
-  db.all("SELECT * FROM product", (err, rows) => {
+  db.all(`SELECT * from PRODUCT WHERE obsolete='NON-OBSOLETED'`, (err, rows) => {
     if (err) {
       res.status(400).json({ "error": err.message });
       return;
@@ -33,17 +33,21 @@ app.get('/product', function (req, res) {
 
 
 //Get membership info 
-// app.get('/membership', function (req, res) {
-//   let sql = `SELECT * FROM membership`;
-//   db.all(sql, (err, rows) => {
-//     if (err) {
-//       res.status(400).json({ "error": err.message });
-//       return;
-//     }
-//     res.status(200).json({ "data": rows });
-//   })
+app.get('/membership', function (req, res) {
+  const grade = req.query.grade;
+  let sql = `SELECT * FROM membership`;
+  if (grade !== undefined) {
+    sql = `SELECT * FROM membership WHERE grade='${grade.toUpperCase()}'`;
+  }
+  db.all(sql, (err, rows) => {
+    if (err) {
+      res.status(400).json({ "error": err.message });
+      return;
+    }
+    res.status(200).json({ "data": rows });
+  })
 
-// })
+})
 
 
 // Add product to cart API with query params productId
@@ -60,7 +64,8 @@ app.post('/cart', function (req, res) {
       return;
     }
     db.all(`SELECT p.id,p.name,p.price FROM cart_item ct INNER JOIN product p on ct.product_id = p.id`, (err, rows) => {
-      res.status(201).json({ "data": rows });
+      const result = deduplicate(rows);
+      res.status(201).json({ "data": result });
     })
 
   })
